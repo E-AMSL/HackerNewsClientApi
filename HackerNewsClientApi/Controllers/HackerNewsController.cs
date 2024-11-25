@@ -1,7 +1,7 @@
-﻿using HackerNewsClientApi.Services;
+﻿using HackerNewsClient.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HackerNewsClientApi.Controllers;
+namespace HackerNewsClient.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]

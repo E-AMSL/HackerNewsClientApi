@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace HackerNewsClientApi.Controllers;
+namespace HackerNewsClient.Api.Controllers;
+
 [ApiController]
 [Route("[controller]")]
 public class WeatherForecastController : ControllerBase

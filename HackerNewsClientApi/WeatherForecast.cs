@@ -1,4 +1,4 @@
-namespace HackerNewsClientApi;
+namespace HackerNewsClient.Api;
 
 public class WeatherForecast
 {
