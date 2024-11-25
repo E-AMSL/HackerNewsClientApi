@@ -4,27 +4,32 @@ using Microsoft.AspNetCore.Mvc;
 namespace HackerNewsClient.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class HackerNewsController : Controller
 {
-    private readonly ILogger<WeatherForecastController> logger;
+    private readonly ILogger<HackerNewsController> logger;
     private readonly IHackerNewsService hackerNewsService;
 
-    public HackerNewsController(ILogger<WeatherForecastController> logger, IHackerNewsService hackerNewsService)
+    public HackerNewsController(ILogger<HackerNewsController> logger, IHackerNewsService hackerNewsService)
     {
         this.logger = logger;
         this.hackerNewsService = hackerNewsService;
     }
 
     [HttpGet(Name = "GetNews")]
-    public ActionResult<IEnumerable<HnNews>> Get()
+    public async Task<ActionResult<IEnumerable<HnNews>>> Get()
     {
-        var getNewsResult = hackerNewsService.GetHnNews();
+        var getNewsResult = await hackerNewsService.GetHnNews();
 
         if (!getNewsResult.Success)
         {
             logger.LogError(getNewsResult.Message);
             return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        if (getNewsResult.Result is null || !getNewsResult.Result.Any())
+        {
+            return NotFound();
         }
 
         return Ok(getNewsResult.Result);

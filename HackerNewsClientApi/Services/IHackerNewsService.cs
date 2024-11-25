@@ -2,5 +2,5 @@
 
 public interface IHackerNewsService
 {
-    ServiceResult<IEnumerable<HnNews>> GetHnNews();
+    Task<ServiceResponseAsync<IEnumerable<HnNews>>> GetHnNews();
 }
