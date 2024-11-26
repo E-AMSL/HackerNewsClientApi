@@ -14,6 +14,7 @@ public class HackerNewsService : IHackerNewsService
 
     private readonly TimeSpan cacheLifetime = TimeSpan.FromMinutes(5);
     private readonly CachedItem<List<HackerNewsStory>> cachedStories;
+    private readonly CachedItem<List<int>> cachedStoryIds;
 
     public HackerNewsService(ILogger<HackerNewsController> logger, HttpClient httpClient)
     {
@@ -28,19 +29,21 @@ public class HackerNewsService : IHackerNewsService
 
         ServiceResponse<IAsyncEnumerable<HackerNewsStory>> result = new();
 
-        if (IsStoryCacheValid(amount))
-        {
-            result.Response = cachedStories.Item.Take(amount).ToAsyncEnumerable();
-            result.Success = true;
-            return result;
-        }
-
         try
         {
             using HttpResponseMessage hackerResponse = await httpClient.GetAsync(popularStoryIdsUrl);
             hackerResponse.EnsureSuccessStatusCode();
             string responseBody = await hackerResponse.Content.ReadAsStringAsync();
-            var storyIds = JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();
+
+            IEnumerable<int> storyIds;
+            if (IsStoryCacheValid(cachedStoryIds))
+            {
+                storyIds = cachedStoryIds.Item;
+            }
+            else
+            {
+                storyIds = JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();
+            }
 
             IAsyncEnumerable<HackerNewsStory> stories = GetStoriesFromIdsAsync(storyIds.Take(amount));
 
@@ -76,8 +79,26 @@ public class HackerNewsService : IHackerNewsService
     {
         logger.LogTrace($"{nameof(HackerNewsService)}.{nameof(GetStoriesFromIdsAsync)}");
 
-        foreach (var id in storyIds)
+        IEnumerable<HackerNewsStory>? cache = cachedStories.Item?.Where(x => storyIds.Contains(x.Id));
+        IEnumerable<int> storiesToGet = storyIds;
+
+        if (cache != null)
         {
+            storiesToGet = storyIds.Except(cache.Select(x => x.Id));
+
+            foreach (var story in cache)
+            {
+                yield return story;
+            }
+        }
+
+        foreach (var id in storiesToGet)
+        {
+            if (IsStoryCacheValid(cachedStories) && cachedStories.Item.Any(x => x.Id == id))
+            {
+                yield return cachedStories.Item.First(x => x.Id == id);
+            }
+
             using HttpResponseMessage hackerResponse = await httpClient.GetAsync($"{storyIdUrl}/{id}.json");
             hackerResponse.EnsureSuccessStatusCode();
             string responseBody = await hackerResponse.Content.ReadAsStringAsync();
@@ -89,12 +110,11 @@ public class HackerNewsService : IHackerNewsService
         }
     }
 
-    private bool IsStoryCacheValid(int amount)
+    private bool IsStoryCacheValid<T>(CachedItem<T> cachedItem)
     {
         logger.LogTrace($"{nameof(HackerNewsService)}.{nameof(IsStoryCacheValid)}");
 
-        return cachedStories.Item is not null
-               && cachedStories.Item.Count() >= amount
-               && cachedStories.CachedTime + cacheLifetime > DateTimeOffset.UtcNow;
+        return cachedItem.Item is not null
+               && cachedItem.CachedTime + cacheLifetime > DateTimeOffset.UtcNow;
     }
 }

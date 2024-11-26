@@ -10,6 +10,7 @@ public class HackerNewsController : Controller
 {
     private readonly ILogger<HackerNewsController> logger;
     private readonly IHackerNewsService hackerNewsService;
+    private readonly int maxAmount = 200; //max returned by https://hacker-news.firebaseio.com/v0/beststories.json
 
     public HackerNewsController(ILogger<HackerNewsController> logger, IHackerNewsService hackerNewsService)
     {
@@ -20,6 +21,11 @@ public class HackerNewsController : Controller
     [HttpGet("{amount}")]
     public async Task<ActionResult<IEnumerable<HackerNewsStory>>> Get(int amount)
     {
+        if (amount > maxAmount)
+        {
+            return BadRequest("Can't request for more than 200 items");
+        }
+
         logger.LogInformation("GET - HackerNews - Get best stories from HackerNews API");
         ServiceResponse<IAsyncEnumerable<HackerNewsStory>> getNewsResult = await hackerNewsService.GetHackerNewsStoriesAsync(amount);
 
