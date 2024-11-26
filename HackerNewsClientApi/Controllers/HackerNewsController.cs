@@ -10,12 +10,15 @@ public class HackerNewsController : Controller
 {
     private readonly ILogger<HackerNewsController> logger;
     private readonly IHackerNewsService hackerNewsService;
-    private readonly int maxAmount = 200; //max returned by https://hacker-news.firebaseio.com/v0/beststories.json
+    private readonly int maxAmount;
 
-    public HackerNewsController(ILogger<HackerNewsController> logger, IHackerNewsService hackerNewsService)
+    public HackerNewsController(ILogger<HackerNewsController> logger, IHackerNewsService hackerNewsService, IConfiguration configuration)
     {
         this.logger = logger;
         this.hackerNewsService = hackerNewsService;
+
+        var appSettings = configuration.GetSection("AppSettings").Get<AppSettings>();
+        maxAmount = appSettings?.MaxStoriesAmount ?? 200;  //max returned by https://hacker-news.firebaseio.com/v0/beststories.json is 200
     }
 
     [HttpGet("{amount}")]
