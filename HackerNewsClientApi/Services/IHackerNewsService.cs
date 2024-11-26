@@ -1,6 +1,8 @@
-﻿namespace HackerNewsClient.Api.Services;
+﻿using HackerNewsClient.Api.Models;
+
+namespace HackerNewsClient.Api.Services;
 
 public interface IHackerNewsService
 {
-    Task<ServiceResponseAsync<IEnumerable<HnNews>>> GetHnNews();
+    Task<ServiceResponse<IAsyncEnumerable<HackerNewsStory>>> GetHackerNewsStoriesAsync();
 }

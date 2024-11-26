@@ -1,4 +1,5 @@
-﻿using HackerNewsClient.Api.Services;
+﻿using HackerNewsClient.Api.Models;
+using HackerNewsClient.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HackerNewsClient.Api.Controllers;
@@ -17,9 +18,10 @@ public class HackerNewsController : Controller
     }
 
     [HttpGet(Name = "GetNews")]
-    public async Task<ActionResult<IEnumerable<HnNews>>> Get()
+    public async Task<ActionResult<IEnumerable<HackerNewsStory>>> Get()
     {
-        var getNewsResult = await hackerNewsService.GetHnNews();
+        logger.LogInformation("GET - HackerNews - Get best stories from HackerNews API");
+        ServiceResponse<IAsyncEnumerable<HackerNewsStory>> getNewsResult = await hackerNewsService.GetHackerNewsStoriesAsync();
 
         if (!getNewsResult.Success)
         {
@@ -27,11 +29,11 @@ public class HackerNewsController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
-        if (getNewsResult.Result is null || !getNewsResult.Result.Any())
+        if (getNewsResult.Response is null)
         {
             return NotFound();
         }
 
-        return Ok(getNewsResult.Result);
+        return Ok(getNewsResult.Response);
     }
 }
