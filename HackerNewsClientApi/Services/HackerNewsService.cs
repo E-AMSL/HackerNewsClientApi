@@ -1,6 +1,8 @@
 ﻿using HackerNewsClient.Api.Controllers;
 using HackerNewsClient.Api.Exceptions;
 using HackerNewsClient.Api.Models;
+using Polly;
+using Polly.Retry;
 using System.Text.Json;
 
 namespace HackerNewsClient.Api.Services;
@@ -8,11 +10,15 @@ namespace HackerNewsClient.Api.Services;
 public class HackerNewsService : IHackerNewsService
 {
     private readonly string bestStoriesAddress;
-    private readonly string storyIdUrl;
+    private readonly string storyItemUrl;
+
     private readonly ILogger<HackerNewsController> logger;
     private readonly HttpClient httpClient;
+
     private readonly CachedItem<List<HackerNewsStory>> cachedStories;
     private readonly CachedItem<List<int>> cachedStoryIds;
+
+    private readonly AsyncRetryPolicy retryPolicy;
 
     public HackerNewsService(ILogger<HackerNewsController> logger, HttpClient httpClient, IConfiguration configuration)
     {
@@ -21,10 +27,14 @@ public class HackerNewsService : IHackerNewsService
 
         var appSettings = configuration.GetSection("AppSettings").Get<AppSettings>();
         bestStoriesAddress = appSettings?.BestStoriesAddress ?? "https://hacker-news.firebaseio.com/v0/beststories.json";
-        storyIdUrl = appSettings?.StoryAddress ?? "https://hacker-news.firebaseio.com/v0/item/";
+        storyItemUrl = appSettings?.StoryAddress ?? "https://hacker-news.firebaseio.com/v0/item/";
 
         cachedStories = new();
         cachedStoryIds = new();
+
+        retryPolicy = Policy
+            .Handle<Exception>()
+            .WaitAndRetryAsync(retryCount: 5, x => TimeSpan.FromSeconds(x));
     }
 
     public async Task<ServiceResponse<IAsyncEnumerable<HackerNewsStory>>> GetHackerNewsStoriesAsync(int amount)
@@ -42,10 +52,15 @@ public class HackerNewsService : IHackerNewsService
             }
             else
             {
-                using HttpResponseMessage hackerResponse = await httpClient.GetAsync(bestStoriesAddress);
-                hackerResponse.EnsureSuccessStatusCode();
-                string responseBody = await hackerResponse.Content.ReadAsStringAsync();
-                storyIds = JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();
+                PolicyResult<IEnumerable<int>> pollyResult = await retryPolicy.ExecuteAndCaptureAsync(async () =>
+                {
+                    using HttpResponseMessage hackerResponse = await httpClient.GetAsync(bestStoriesAddress);
+                    hackerResponse.EnsureSuccessStatusCode();
+                    string responseBody = await hackerResponse.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();
+                });
+
+                storyIds = pollyResult.Result;
             }
 
             IAsyncEnumerable<HackerNewsStory> stories = GetStoriesFromIdsAsync(storyIds.Take(amount));
@@ -95,17 +110,24 @@ public class HackerNewsService : IHackerNewsService
             }
         }
 
-        List<Task<HttpResponseMessage>> httpClientTasks = [];
+        List<Task<PolicyResult<HttpResponseMessage>>> httpClientTasks = [];
 
         foreach (var id in storiesToGet)
         {
-            httpClientTasks.Add(httpClient.GetAsync($"{storyIdUrl}/{id}.json"));
+
+            Task<PolicyResult<HttpResponseMessage>> pollyResult = retryPolicy.ExecuteAndCaptureAsync(async () =>
+            {
+                return await httpClient.GetAsync($"{storyItemUrl}/{id}.json");
+            });
+
+            httpClientTasks.Add(pollyResult);
         }
 
         var responses = await Task.WhenAll(httpClientTasks);
 
-        foreach (var httpResponse in responses)
+        foreach (var pollyResponse in responses)
         {
+            HttpResponseMessage httpResponse = pollyResponse.Result;
             httpResponse.EnsureSuccessStatusCode();
             string responseBody = await httpResponse.Content.ReadAsStringAsync();
 
