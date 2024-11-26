@@ -12,19 +12,21 @@ This API fetches popular articles from the Hacker News API and returns a list of
 
 Response
 
-The API returns a list of HackerNewsStory objects, which contain the following properties:
+The API returns a list of stories from HackerNews API, which contain the following properties:
 
-    Id: The unique identifier of the story.
-    Title: The title of the story.
-    Url: The URL of the story.
-    Score: The score of the story.
-    Time: The time the story was posted.
+    title: The title of the story.
+    postedBy: The author of the story
+    uri: The URI of the story.
+    time: The time the story was posted.
+    score: The score of the story.
+    commentCount: The amount of comments.
 
 ## Example Use:
 
-curl https://example.com/api/HackerNews/2
+    curl https://example.com/api/HackerNews/2
 
 Result:
+```
     [
       {
         "title": "ICC issues warrants for Netanyahu, Gallant, and Hamas officials",
@@ -43,8 +45,13 @@ Result:
         "commentCount": 36
       }
     ]
+```
 
 ## TODO
  - Caching logic should be moved to a separate class like a decorator for IHackerNewsService or other kind intermediate between the service and the controller
  - ~~Articles could be stored in a long-term storage (i.e. SQL database) as they are not expected to change over time.~~ Titles can change, score and comment count will change quite often.
  - Rate limiting, could be a middleware class.
+ - Integration tests
+ - Versioning, replace /api/HackerNews/{amount} with /api/v1/HackerNews/{amount}
+
+Client assumes that list of articles returned by HackerNews API is already sorted by their score in descending order
