@@ -28,7 +28,7 @@ public class HackerNewsService : IHackerNewsService
 
         ServiceResponse<IAsyncEnumerable<HackerNewsStory>> result = new();
 
-        if (await IsStoryCacheValid(amount))
+        if (IsStoryCacheValid(amount))
         {
             result.Response = cachedStories.Item.Take(amount).ToAsyncEnumerable();
             result.Success = true;
@@ -89,7 +89,7 @@ public class HackerNewsService : IHackerNewsService
         }
     }
 
-    private async Task<bool> IsStoryCacheValid(int amount)
+    private bool IsStoryCacheValid(int amount)
     {
         logger.LogTrace($"{nameof(HackerNewsService)}.{nameof(IsStoryCacheValid)}");
 
