@@ -4,6 +4,11 @@
 
 This API fetches popular articles from the Hacker News API and returns a list of stories.
 
+## How to run
+    git clone https://github.com/E-AMSL/HackerNewsClientApi HN-Api
+    dotnet build HN-Api
+    dotnet run HN-Api/HackerNewsClientApi/HackerNewsClient.Api
+
 ## Endpoints
 ### GET /api/HackerNews/{amount}
 
@@ -21,7 +26,7 @@ The API returns a list of stories from HackerNews API, which contain the followi
     score: The score of the story.
     commentCount: The amount of comments.
 
-## Example Use:
+## Example Use
 
     curl https://example.com/api/HackerNews/2
 
