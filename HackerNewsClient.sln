@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HackerNewsClientApi", "HackerNewsClientApi\HackerNewsClientApi.csproj", "{C3505625-A75C-4788-9280-BBD8F4E85737}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HackerNewsClient.Api", "HackerNewsClientApi\HackerNewsClient.Api.csproj", "{C3505625-A75C-4788-9280-BBD8F4E85737}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{CD633F09-8B80-4721-BCF5-2D1CE63E83A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
