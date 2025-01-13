@@ -7,18 +7,22 @@ namespace HackerNewsClient.Api.Services;
 
 public class HackerNewsService : IHackerNewsService
 {
-    private readonly string popularStoryIdsUrl = "https://hacker-news.firebaseio.com/v0/beststories.json";
-    private readonly string storyIdUrl = "https://hacker-news.firebaseio.com/v0/item/";
+    private readonly string bestStoriesAddress;
+    private readonly string storyIdUrl;
     private readonly ILogger<HackerNewsController> logger;
     private readonly HttpClient httpClient;
-
     private readonly CachedItem<List<HackerNewsStory>> cachedStories;
     private readonly CachedItem<List<int>> cachedStoryIds;
 
-    public HackerNewsService(ILogger<HackerNewsController> logger, HttpClient httpClient)
+    public HackerNewsService(ILogger<HackerNewsController> logger, HttpClient httpClient, IConfiguration configuration)
     {
         this.logger = logger;
         this.httpClient = httpClient;
+
+        var appSettings = configuration.GetSection("AppSettings").Get<AppSettings>();
+        bestStoriesAddress = appSettings?.BestStoriesAddress ?? "https://hacker-news.firebaseio.com/v0/beststories.json";
+        storyIdUrl = appSettings?.StoryAddress ?? "https://hacker-news.firebaseio.com/v0/item/";
+
         cachedStories = new();
         cachedStoryIds = new();
     }
@@ -38,7 +42,7 @@ public class HackerNewsService : IHackerNewsService
             }
             else
             {
-                using HttpResponseMessage hackerResponse = await httpClient.GetAsync(popularStoryIdsUrl);
+                using HttpResponseMessage hackerResponse = await httpClient.GetAsync(bestStoriesAddress);
                 hackerResponse.EnsureSuccessStatusCode();
                 string responseBody = await hackerResponse.Content.ReadAsStringAsync();
                 storyIds = JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();

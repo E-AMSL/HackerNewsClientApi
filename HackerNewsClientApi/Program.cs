@@ -1,3 +1,4 @@
+using HackerNewsClient.Api.Models;
 using HackerNewsClient.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+
 builder.Services.AddSingleton<HttpClient>();
 builder.Services.AddSingleton<IHackerNewsService, HackerNewsService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
