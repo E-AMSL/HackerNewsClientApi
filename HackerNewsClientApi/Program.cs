@@ -5,8 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<HttpClient>();
-builder.Services.AddScoped<IHackerNewsService, HackerNewsService>();
+builder.Services.AddSingleton<HttpClient>();
+builder.Services.AddSingleton<IHackerNewsService, HackerNewsService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

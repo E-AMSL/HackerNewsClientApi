@@ -17,11 +17,11 @@ public class HackerNewsController : Controller
         this.hackerNewsService = hackerNewsService;
     }
 
-    [HttpGet(Name = "GetNews")]
-    public async Task<ActionResult<IEnumerable<HackerNewsStory>>> Get()
+    [HttpGet("{amount}")]
+    public async Task<ActionResult<IEnumerable<HackerNewsStory>>> Get(int amount)
     {
         logger.LogInformation("GET - HackerNews - Get best stories from HackerNews API");
-        ServiceResponse<IAsyncEnumerable<HackerNewsStory>> getNewsResult = await hackerNewsService.GetHackerNewsStoriesAsync();
+        ServiceResponse<IAsyncEnumerable<HackerNewsStory>> getNewsResult = await hackerNewsService.GetHackerNewsStoriesAsync(amount);
 
         if (!getNewsResult.Success)
         {

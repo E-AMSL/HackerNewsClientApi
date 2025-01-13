@@ -2,7 +2,6 @@
 using HackerNewsClient.Api.Exceptions;
 using HackerNewsClient.Api.Models;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace HackerNewsClient.Api.Services;
 
@@ -14,7 +13,7 @@ public class HackerNewsService : IHackerNewsService
     private readonly HttpClient httpClient;
 
     private readonly TimeSpan cacheLifetime = TimeSpan.FromMinutes(5);
-    private readonly CachedItem<IAsyncEnumerable<HackerNewsStory>> cachedStories;
+    private readonly CachedItem<List<HackerNewsStory>> cachedStories;
 
     public HackerNewsService(ILogger<HackerNewsController> logger, HttpClient httpClient)
     {
@@ -23,15 +22,15 @@ public class HackerNewsService : IHackerNewsService
         cachedStories = new();
     }
 
-    public async Task<ServiceResponse<IAsyncEnumerable<HackerNewsStory>>> GetHackerNewsStoriesAsync()
+    public async Task<ServiceResponse<IAsyncEnumerable<HackerNewsStory>>> GetHackerNewsStoriesAsync(int amount)
     {
         logger.LogTrace($"{nameof(HackerNewsService)}.{nameof(GetHackerNewsStoriesAsync)}");
 
         ServiceResponse<IAsyncEnumerable<HackerNewsStory>> result = new();
 
-        if (IsStoryCacheValid())
+        if (await IsStoryCacheValid(amount))
         {
-            result.Response = cachedStories.Item;
+            result.Response = cachedStories.Item.Take(amount).ToAsyncEnumerable();
             result.Success = true;
             return result;
         }
@@ -43,9 +42,9 @@ public class HackerNewsService : IHackerNewsService
             string responseBody = await hackerResponse.Content.ReadAsStringAsync();
             var storyIds = JsonSerializer.Deserialize<IEnumerable<int>>(responseBody) ?? throw new JsonParsingException();
 
-            IAsyncEnumerable<HackerNewsStory> stories = GetStoriesFromIdsAsync(storyIds);
+            IAsyncEnumerable<HackerNewsStory> stories = GetStoriesFromIdsAsync(storyIds.Take(amount));
 
-            cachedStories.Item = stories;
+            cachedStories.Item = await stories.ToListAsync(); //To avoid deffered execution during cache validation which can result in an endless loop
             cachedStories.CachedTime = DateTimeOffset.UtcNow;
 
             result.Success = true;
@@ -83,17 +82,19 @@ public class HackerNewsService : IHackerNewsService
             hackerResponse.EnsureSuccessStatusCode();
             string responseBody = await hackerResponse.Content.ReadAsStringAsync();
 
-            HackerNewsStory hackerNewsStory = JsonSerializer.Deserialize<HackerNewsStory>(responseBody) 
+            HackerNewsStoryDto hackerNewsStory = JsonSerializer.Deserialize<HackerNewsStoryDto>(responseBody) 
                 ?? throw new JsonParsingException($"Could not parse story :{id}");
 
-            yield return hackerNewsStory;
+            yield return hackerNewsStory.ToHackerNewsStory();
         }
     }
 
-    private bool IsStoryCacheValid()
+    private async Task<bool> IsStoryCacheValid(int amount)
     {
         logger.LogTrace($"{nameof(HackerNewsService)}.{nameof(IsStoryCacheValid)}");
 
-        return cachedStories.Item is not null && cachedStories.CachedTime + cacheLifetime < DateTimeOffset.UtcNow;
+        return cachedStories.Item is not null
+               && cachedStories.Item.Count() >= amount
+               && cachedStories.CachedTime + cacheLifetime > DateTimeOffset.UtcNow;
     }
 }
