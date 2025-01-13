@@ -95,21 +95,27 @@ public class HackerNewsService : IHackerNewsService
             }
         }
 
+        List<Task<HttpResponseMessage>> httpClientTasks = [];
+
         foreach (var id in storiesToGet)
         {
-            if (cachedStories.IsCacheValid() && cachedStories.Item.Any(x => x.Id == id))
+            httpClientTasks.Add(httpClient.GetAsync($"{storyIdUrl}/{id}.json"));
+        }
+
+        var responses = await Task.WhenAll(httpClientTasks);
+
+        foreach (var httpResponse in responses)
+        {
+            httpResponse.EnsureSuccessStatusCode();
+            string responseBody = await httpResponse.Content.ReadAsStringAsync();
+
+            httpResponse.Dispose();
+
+            HackerNewsStoryDto? hackerNewsStory = JsonSerializer.Deserialize<HackerNewsStoryDto>(responseBody);
+            if (hackerNewsStory != null)
             {
-                yield return cachedStories.Item.First(x => x.Id == id);
+                yield return hackerNewsStory.ToHackerNewsStory();
             }
-
-            using HttpResponseMessage hackerResponse = await httpClient.GetAsync($"{storyIdUrl}/{id}.json");
-            hackerResponse.EnsureSuccessStatusCode();
-            string responseBody = await hackerResponse.Content.ReadAsStringAsync();
-
-            HackerNewsStoryDto hackerNewsStory = JsonSerializer.Deserialize<HackerNewsStoryDto>(responseBody) 
-                ?? throw new JsonParsingException($"Could not parse story :{id}");
-
-            yield return hackerNewsStory.ToHackerNewsStory();
         }
     }
 }

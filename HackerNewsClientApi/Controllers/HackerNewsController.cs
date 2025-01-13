@@ -31,7 +31,7 @@ public class HackerNewsController : Controller
 
         if (amount > maxAmount)
         {
-            return BadRequest("Can't request for more than 200 items");
+            return BadRequest($"Can't request for more than {maxAmount} items");
         }
 
         logger.LogInformation("GET - HackerNews - Get best stories from HackerNews API");
