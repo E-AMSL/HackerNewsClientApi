@@ -39,7 +39,7 @@ public class HackerNewsStoryDto
             CommentCount = Kids.Count(),
             PostedBy = By,
             Score = Score,
-            Time = DateTimeOffset.FromUnixTimeMilliseconds(Time),
+            Time = DateTimeOffset.FromUnixTimeSeconds(Time),
             Title = Title,
             Uri = Url
         };

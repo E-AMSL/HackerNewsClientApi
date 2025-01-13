@@ -21,6 +21,11 @@ public class HackerNewsController : Controller
     [HttpGet("{amount}")]
     public async Task<ActionResult<IEnumerable<HackerNewsStory>>> Get(int amount)
     {
+        if (amount == 0)
+        {
+            return Ok(Enumerable.Empty<HackerNewsStory>());
+        }
+
         if (amount > maxAmount)
         {
             return BadRequest("Can't request for more than 200 items");
@@ -35,7 +40,7 @@ public class HackerNewsController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
-        if (getNewsResult.Response is null)
+        if (getNewsResult.Response is null || !(await getNewsResult.Response.AnyAsync()))
         {
             return NotFound();
         }
