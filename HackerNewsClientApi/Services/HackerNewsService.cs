@@ -21,6 +21,7 @@ public class HackerNewsService : IHackerNewsService
         this.logger = logger;
         this.httpClient = httpClient;
         cachedStories = new();
+        cachedStoryIds = new();
     }
 
     public async Task<ServiceResponse<IAsyncEnumerable<HackerNewsStory>>> GetHackerNewsStoriesAsync(int amount)
